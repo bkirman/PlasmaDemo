@@ -1,0 +1,45 @@
+import math
+import time
+
+
+def sparkles(led_strip, num_leds,frame):
+    """
+    Use multiple overlapping, phase-shifted sine waves to create a sparkly effect.
+    """
+    EFFECT_SPEED = 2       # Does what it says on the tin! (lower is slower but you might see quantization/stepping)
+    EFFECT_SHARPNESS = 3  # Numbers between 1 and 1000 are practical, give them a try!
+
+    period = math.pi * EFFECT_SPEED
+
+    t = time.ticks_ms() / 1000 * period
+    t *= 0.5
+
+    for i in range(num_leds):
+        led_offset = i / num_leds
+        led_offset *= math.pi
+        led_offset *= 3
+        led_offset += t
+
+        # A sine with a 2x period, shifted to 0 to 254
+        # This provides a brightness cycling effect phase-locked to the LEDs
+        br = (math.sin(t / 2 + led_offset) + 1) * 127
+
+        # Calculate slightly out of phase sine waves for the red, green and blue channels
+        r = (math.sin(led_offset + (period * 0.85)) + 1) / 2
+        g = (math.sin(led_offset + (period * 0.90)) + 1) / 2
+        b = (math.sin(led_offset + (period * 0.95)) + 1) / 2
+
+        # Convert the slow procession of the sine wave into a brief pulse
+        # by raising it by a power we've called EFFECT_SHARPNESS
+        # https://www.wolframalpha.com/input?i=plot+pow%28%28sin%28x%29+%2B+1%29+%2F+2.0%2C+10%29%2C+%28sin%28x%29+%2B+1%29+%2F+2.0
+        r = min(1, max(0, math.pow(r, EFFECT_SHARPNESS)))
+        g = min(1, max(0, math.pow(g, EFFECT_SHARPNESS)))
+        b = min(1, max(0, math.pow(b, EFFECT_SHARPNESS)))
+
+        # Tune the output colours and apply brightness
+        # This is a nice greeny teal
+        r = 0
+        g = int(g * br)
+        b = int(g * 0.6)
+
+        led_strip.set_rgb(i, g, r, b)
